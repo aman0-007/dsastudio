@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DSA Visualizer — Interactive Algorithm Studio</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Smooth CSS bar transitions for heights and transforms */
+    .visualizer-bar {
+      transition: height 0.25s cubic-bezier(0.4, 0, 0.2, 1), 
+                  background-color 0.2s ease, 
+                  transform 0.2s ease;
+    }
+    .node-item {
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col selection:bg-slate-200">
+
+  <!-- ================= TOP NAVIGATION ================= -->
+  <header class="bg-white border-b border-slate-200/80 sticky top-0 z-50">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+      
+      <!-- Brand Logo -->
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center text-white font-mono text-sm font-semibold tracking-tighter">
+          &lt;/&gt;
+        </div>
+        <div class="flex flex-col">
+          <span class="font-semibold text-slate-900 text-sm tracking-tight leading-none">DSA Studio</span>
+          <span class="text-[11px] text-slate-600 font-mono">visual.engine</span>
+        </div>
+      </div>
+
+      <!-- Categories Navigation -->
+      <nav class="flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200/70 text-xs sm:text-sm font-medium">
+        <button id="cat-sorting" onclick="setCategory('sorting')" class="px-3.5 py-1.5 rounded-lg transition-all text-slate-900 bg-white shadow-xs font-semibold">
+          Sorting
+        </button>
+        <button id="cat-searching" onclick="setCategory('searching')" class="px-3.5 py-1.5 rounded-lg transition-all text-slate-700 hover:text-slate-900">
+          Searching
+        </button>
+        <button id="cat-datastructures" onclick="setCategory('datastructures')" class="px-3.5 py-1.5 rounded-lg transition-all text-slate-700 hover:text-slate-900">
+          Data Structures
+        </button>
+      </nav>
+
+      <!-- Algorithm Selector & Complexity Tag -->
+      <div class="flex items-center gap-3">
+        <select id="algo-select" onchange="onAlgoChange()" class="text-xs sm:text-sm font-medium bg-white border border-slate-200 text-slate-800 rounded-lg px-2.5 py-1.5 outline-hidden focus:border-slate-400 focus:ring-2 focus:ring-slate-100 cursor-pointer">
+          <!-- Populated dynamically -->
+        </select>
+        <span id="complexity-badge" class="hidden sm:inline-flex items-center px-2 py-1 rounded-md text-[11px] font-mono font-medium bg-slate-100 text-slate-700 border border-slate-200">
+          O(n²)
+        </span>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ================= CONTROL TOOLBAR ================= -->
+  <section class="max-w-6xl w-full mx-auto px-4 sm:px-6 pt-5 pb-3">
+    <div class="bg-white border border-slate-200/90 rounded-2xl p-3 sm:p-4 shadow-xs flex flex-wrap items-center justify-between gap-3">
+      
+      <!-- Primary Controls: Play, Step, Reset -->
+      <div class="flex items-center gap-1.5">
+        <button id="btn-play" onclick="togglePlay()" class="h-9 px-4 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-medium text-xs sm:text-sm flex items-center gap-2 transition-all active:scale-95 shadow-xs">
+          <svg id="play-icon" class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          <span id="play-text">Play</span>
+        </button>
+
+        <button id="btn-step" onclick="stepForward()" title="Step Forward (1 tick)" class="h-9 px-3 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium text-xs sm:text-sm flex items-center gap-1.5 transition-all active:scale-95">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7"/></svg>
+          <span class="hidden sm:inline">Step</span>
+        </button>
+
+        <button onclick="resetState()" title="Reset current state" class="h-9 px-3 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium text-xs sm:text-sm flex items-center gap-1.5 transition-all active:scale-95">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          <span class="hidden sm:inline">Reset</span>
+        </button>
+      </div>
+
+      <!-- Context-Aware Dynamic Input Bar -->
+      <div id="dynamic-inputs" class="flex items-center gap-2 flex-1 justify-center max-w-lg min-w-[240px]">
+        <!-- Rendered based on Category / Algorithm -->
+      </div>
+
+      <!-- Speed Control -->
+      <div class="flex items-center gap-2.5 pl-2 sm:border-l sm:border-slate-200">
+        <span class="text-xs text-slate-600 font-medium whitespace-nowrap">Speed</span>
+        <input type="range" id="speed-slider" min="50" max="1000" step="25" value="400" oninput="updateSpeed(this.value)" class="w-20 sm:w-28 accent-slate-900 cursor-pointer h-1.5 bg-slate-200 rounded-lg">
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ================= MAIN VISUAL CANVAS ================= -->
+  <main class="max-w-6xl w-full mx-auto px-4 sm:px-6 flex-1 flex flex-col gap-3 pb-6">
+    
+    <!-- Stage Window -->
+    <div class="relative bg-white border border-slate-200/90 rounded-2xl shadow-xs flex-1 min-h-[380px] p-6 flex flex-col justify-center items-center overflow-hidden">
+      
+      <!-- Rendering Layer -->
+      <div id="canvas-container" class="w-full h-full flex justify-center items-end relative min-h-[320px]">
+        <!-- Dynamic visual components drawn here -->
+      </div>
+
+      <!-- Color Legend -->
+      <div class="absolute top-4 right-4 flex items-center gap-3 text-[11px] font-mono text-slate-600 bg-white/90 backdrop-blur-xs px-2.5 py-1.5 rounded-lg border border-slate-200/60 shadow-xs">
+        <div class="flex items-center gap-1.5">
+          <span class="w-2.5 h-2.5 rounded-sm bg-slate-200 border border-slate-300"></span>
+          <span>Default</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <span class="w-2.5 h-2.5 rounded-sm bg-amber-400 border border-amber-500"></span>
+          <span>Inspect</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <span class="w-2.5 h-2.5 rounded-sm bg-rose-500 border border-rose-600"></span>
+          <span>Action</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <span class="w-2.5 h-2.5 rounded-sm bg-emerald-500 border border-emerald-600"></span>
+          <span>Sorted</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status Box -->
+    <div class="bg-slate-900 text-slate-100 px-4 py-3 rounded-xl font-mono text-xs sm:text-sm flex items-center justify-between gap-4 border border-slate-800 shadow-sm">
+      <div class="flex items-center gap-2.5 overflow-hidden">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 shrink-0 animate-pulse"></span>
+        <span class="text-slate-500 select-none">status:</span>
+        <p id="status-message" class="text-slate-200 truncate font-sans">Visualizer ready. Click Play or Step Forward.</p>
+      </div>
+      <div id="step-counter" class="text-slate-500 text-xs shrink-0 select-none">Step: 0</div>
+    </div>
+
+  </main>
+
+  <!-- ================= LOGIC & ANIMATION ENGINE ================= -->
+  <script>
+    // --- Application State ---
+    const state = {
+      category: 'sorting',
+      algorithm: 'bubble',
+      array: [38, 27, 43, 3, 9, 82, 10, 19, 50, 61, 23],
+      target: 19,
+      // Stack/Queue States
+      dsList: [12, 28, 45, 67],
+      // BST Root
+      bstRoot: null,
+      // Execution Control
+      generator: null,
+      isPlaying: false,
+      timerId: null,
+      delay: 400,
+      stepCount: 0,
+      lastStepValue: null
+    };
+
+    // Algorithm metadata
+    const algoMeta = {
+      bubble: { name: 'Bubble Sort', category: 'sorting', complexity: 'O(n²)' },
+      quick: { name: 'Quick Sort', category: 'sorting', complexity: 'O(n log n)' },
+      linear: { name: 'Linear Search', category: 'searching', complexity: 'O(n)' },
+      binary: { name: 'Binary Search', category: 'searching', complexity: 'O(log n)' },
+      stack: { name: 'Stack (LIFO)', category: 'datastructures', complexity: 'Push/Pop: O(1)' },
+      queue: { name: 'Queue (FIFO)', category: 'datastructures', complexity: 'Enq/Deq: O(1)' },
+      bst: { name: 'Binary Search Tree', category: 'datastructures', complexity: 'Search: O(log n)' }
+    };
+
+    // --- BST Node Class ---
+    class BSTNode {
+      constructor(val) {
+        this.val = val;
+        this.left = null;
+        this.right = null;
+      }
+    }
+
+    // --- Core Generators ---
+
+    // 1. Bubble Sort
+    function* bubbleSortGen(inputArr) {
+      let arr = [...inputArr];
+      let n = arr.length;
+      let sorted = [];
+
+      for (let i = 0; i < n; i++) {
+        for (let j = 0; j < n - i - 1; j++) {
+          yield {
+            arr: [...arr],
+            comparing: [j, j + 1],
+            swapping: [],
+            sorted: [...sorted],
+            msg: `Inspecting arr[${j}] (${arr[j]}) and arr[${j + 1}] (${arr[j + 1]}).`
+          };
+
+          if (arr[j] > arr[j + 1]) {
+            yield {
+              arr: [...arr],
+              comparing: [],
+              swapping: [j, j + 1],
+              sorted: [...sorted],
+              msg: `${arr[j]} > ${arr[j + 1]} — Swapping elements.`
+            };
+            let temp = arr[j];
+            arr[j] = arr[j + 1];
+            arr[j + 1] = temp;
+
+            yield {
+              arr: [...arr],
+              comparing: [],
+              swapping: [j, j + 1],
+              sorted: [...sorted],
+              msg: `Swapped to: [..., ${arr[j]}, ${arr[j + 1]}, ...].`
+            };
+          }
+        }
+        sorted.push(n - i - 1);
+      }
+      yield {
+        arr: [...arr],
+        comparing: [],
+        swapping: [],
+        sorted: arr.map((_, idx) => idx),
+        msg: 'Bubble Sort complete! All elements positioned in sorted order.'
+      };
+    }
+
+    // 2. Quick Sort
+    function* quickSortGen(inputArr) {
+      let arr = [...inputArr];
+      let sortedIndices = new Set();
+
+      function* partition(low, high) {
+        let pivot = arr[high];
+        let i = low - 1;
+        yield {
+          arr: [...arr],
+          pivot: high,
+          comparing: [],
+          swapping: [],
+          sorted: [...sortedIndices],
+          msg: `Chosen pivot: ${pivot} at index ${high}. Partitioning range [${low}..${high}].`
+        };
+
+        for (let j = low; j < high; j++) {
+          yield {
+            arr: [...arr],
+            pivot: high,
+            comparing: [j, high],
+            swapping: [],
+            sorted: [...sortedIndices],
+            msg: `Comparing arr[${j}] (${arr[j]}) with pivot ${pivot}.`
+          };
+
+          if (arr[j] < pivot) {
+            i++;
+            if (i !== j) {
+              yield {
+                arr: [...arr],
+                pivot: high,
+                comparing: [],
+                swapping: [i, j],
+                sorted: [...sortedIndices],
+                msg: `${arr[j]} < ${pivot}. Swapping arr[${i}] (${arr[i]}) and arr[${j}] (${arr[j]}).`
+              };
+              [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+          }
+        }
+        yield {
+          arr: [...arr],
+          pivot: high,
+          comparing: [],
+          swapping: [i + 1, high],
+          sorted: [...sortedIndices],
+          msg: `Moving pivot ${pivot} to its final partition slot at index ${i + 1}.`
+        };
+        [arr[i + 1], arr[high]] = [arr[high], arr[i + 1]];
+        sortedIndices.add(i + 1);
+        return i + 1;
+      }
+
+      function* quickSort(low, high) {
+        if (low <= high) {
+          if (low === high) {
+            sortedIndices.add(low);
+            yield {
+              arr: [...arr],
+              comparing: [],
+              swapping: [],
+              sorted: [...sortedIndices],
+              msg: `Single element at index ${low} is trivially sorted.`
+            };
+            return;
+          }
+          let pi = yield* partition(low, high);
+          yield* quickSort(low, pi - 1);
+          yield* quickSort(pi + 1, high);
+        }
+      }
+
+      yield* quickSort(0, arr.length - 1);
+      yield {
+        arr: [...arr],
+        comparing: [],
+        swapping: [],
+        sorted: arr.map((_, i) => i),
+        msg: 'Quick Sort completed successfully.'
+      };
+    }
+
+    // 3. Linear Search
+    function* linearSearchGen(arr, target) {
+      for (let i = 0; i < arr.length; i++) {
+        yield {
+          arr,
+          inspecting: i,
+          found: -1,
+          msg: `Index ${i}: Comparing value ${arr[i]} with target ${target}.`
+        };
+
+        if (arr[i] === target) {
+          yield {
+            arr,
+            inspecting: -1,
+            found: i,
+            msg: `Match found! Element ${target} exists at index ${i}.`
+          };
+          return;
+        }
+      }
+      yield {
+        arr,
+        inspecting: -1,
+        found: -1,
+        msg: `Search exhausted. Target element ${target} was not found.`
+      };
+    }
+
+    // 4. Binary Search
+    function* binarySearchGen(arr, target) {
+      // Binary search requires sorted array
+      let sorted = [...arr].sort((a, b) => a - b);
+      let low = 0;
+      let high = sorted.length - 1;
+
+      yield {
+        arr: sorted,
+        low, high, mid: -1, inspecting: -1, found: -1,
+        msg: `Array prepared & sorted. Initial search range [${low} .. ${high}].`
+      };
+
+      while (low <= high) {
+        let mid = Math.floor((low + high) / 2);
+        yield {
+          arr: sorted,
+          low, high, mid, inspecting: mid, found: -1,
+          msg: `Middle index: ${mid} (value: ${sorted[mid]}). Comparing against target ${target}.`
+        };
+
+        if (sorted[mid] === target) {
+          yield {
+            arr: sorted,
+            low, high, mid, inspecting: -1, found: mid,
+            msg: `Target ${target} located precisely at index ${mid}!`
+          };
+          return;
+        } else if (sorted[mid] < target) {
+          yield {
+            arr: sorted,
+            low, high, mid, inspecting: mid, found: -1,
+            msg: `${sorted[mid]} < ${target}. Target must be in right half. Adjusting low = ${mid + 1}.`
+          };
+          low = mid + 1;
+        } else {
+          yield {
+            arr: sorted,
+            low, high, mid, inspecting: mid, found: -1,
+            msg: `${sorted[mid]} > ${target}. Target must be in left half. Adjusting high = ${mid - 1}.`
+          };
+          high = mid - 1;
+        }
+      }
+
+      yield {
+        arr: sorted,
+        low, high, mid: -1, inspecting: -1, found: -1,
+        msg: `Target ${target} was not found in the array.`
+      };
+    }
+
+    // 5. Stack / Queue Step Demos
+    function* stackDemoGen() {
+      let stack = [...state.dsList];
+      yield { list: [...stack], action: null, index: -1, msg: "Stack ready (LIFO: Last In, First Out)." };
+      
+      const pushVal = Math.floor(Math.random() * 80) + 10;
+      yield { list: [...stack], action: 'push-start', val: pushVal, index: stack.length, msg: `Pushing value ${pushVal} to top of stack.` };
+      stack.push(pushVal);
+      yield { list: [...stack], action: 'pushed', index: stack.length - 1, msg: `Pushed ${pushVal} onto stack. Top is now index ${stack.length - 1}.` };
+
+      yield { list: [...stack], action: 'inspect', index: stack.length - 1, msg: `Peeking top element (${stack[stack.length - 1]}).` };
+
+      const popped = stack.pop();
+      yield { list: [...stack], action: 'popped', val: popped, index: stack.length, msg: `Popped top element (${popped}) from stack.` };
+      yield { list: [...stack], action: null, index: -1, msg: "Stack operation cycle complete." };
+    }
+
+    function* queueDemoGen() {
+      let queue = [...state.dsList];
+      yield { list: [...queue], action: null, index: -1, msg: "Queue ready (FIFO: First In, First Out)." };
+
+      const enqVal = Math.floor(Math.random() * 80) + 10;
+      yield { list: [...queue], action: 'enqueue-start', val: enqVal, index: queue.length, msg: `Enqueue: adding ${enqVal} at REAR.` };
+      queue.push(enqVal);
+      yield { list: [...queue], action: 'enqueued', index: queue.length - 1, msg: `Element ${enqVal} enqueued at position ${queue.length - 1}.` };
+
+      yield { list: [...queue], action: 'inspect', index: 0, msg: `Inspecting FRONT element (${queue[0]}).` };
+
+      const deq = queue.shift();
+      yield { list: [...queue], action: 'dequeued', val: deq, index: 0, msg: `Dequeue: removed front element (${deq}). Items shift left.` };
+      yield { list: [...queue], action: null, index: -1, msg: "Queue operation cycle complete." };
+    }
+
+    // 6. BST Inorder Traversal Generator
+    function* bstInorderGen(root) {
+      if (!root) {
+        yield { bst: root, activeNode: null, visited: [], msg: "BST is empty." };
+        return;
+      }
+      let visited = [];
+      function* traverse(node) {
+        if (!node) return;
+        yield { bst: root, activeNode: node.val, visited: [...visited], msg: `Visiting node ${node.val}, traversing left subtree.` };
+        yield* traverse(node.left);
+        
+        visited.push(node.val);
+        yield { bst: root, activeNode: node.val, visited: [...visited], isProcessed: true, msg: `Processed node ${node.val} in sorted order.` };
+        
+        yield { bst: root, activeNode: node.val, visited: [...visited], msg: `Traversing right subtree of node ${node.val}.` };
+        yield* traverse(node.right);
+      }
+      yield* traverse(root);
+      yield { bst: root, activeNode: null, visited: [...visited], msg: `Inorder traversal complete: [${visited.join(', ')}].` };
+    }
+
+    // --- DOM Rendering Functions ---
+
+    function renderSorting(step) {
+      const container = document.getElementById('canvas-container');
+      const { arr, comparing = [], swapping = [], sorted = [], pivot = null } = step;
+      const maxVal = Math.max(...arr, 1);
+
+      container.className = "w-full h-full flex justify-center items-end gap-2 sm:gap-3 px-4 pb-4 min-h-[320px]";
+      container.innerHTML = arr.map((val, idx) => {
+        let colorClass = "bg-slate-200 text-slate-700 border-slate-300";
+
+        if (sorted.includes(idx)) {
+          colorClass = "bg-emerald-500 text-white border-emerald-600 shadow-sm";
+        } else if (swapping.includes(idx)) {
+          colorClass = "bg-rose-500 text-white border-rose-600 scale-105 shadow-md";
+        } else if (comparing.includes(idx)) {
+          colorClass = "bg-amber-400 text-amber-950 border-amber-500 ring-2 ring-amber-200";
+        } else if (pivot === idx) {
+          colorClass = "bg-indigo-500 text-white border-indigo-600 ring-2 ring-indigo-200";
+        }
+
+        const heightPct = Math.max((val / maxVal) * 82, 12);
+
+        return `
+          <div class="flex-1 max-w-[52px] flex flex-col items-center gap-1.5 h-full justify-end group">
+            <span class="text-[11px] font-mono font-medium text-slate-500">${val}</span>
+            <div style="height: ${heightPct}%;" 
+                 class="visualizer-bar w-full rounded-lg border flex items-end justify-center pb-1 text-xs font-mono font-bold ${colorClass}">
+            </div>
+            <span class="text-[10px] font-mono text-slate-600">${idx}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderSearching(step) {
+      const container = document.getElementById('canvas-container');
+      const { arr, inspecting = -1, found = -1, low, mid, high } = step;
+
+      container.className = "w-full h-full flex flex-wrap justify-center items-center gap-2 sm:gap-3 px-4 min-h-[320px]";
+      container.innerHTML = arr.map((val, idx) => {
+        let colorClass = "bg-white text-slate-800 border-slate-200 shadow-xs";
+        let pointerBadges = [];
+
+        if (idx === found) {
+          colorClass = "bg-emerald-500 text-white border-emerald-600 scale-105 shadow-md ring-2 ring-emerald-300";
+        } else if (idx === inspecting) {
+          colorClass = "bg-amber-400 text-amber-950 border-amber-500 ring-2 ring-amber-300";
+        } else if (low !== undefined && (idx < low || idx > high)) {
+          colorClass = "bg-slate-50 text-slate-600 border-slate-200 opacity-40";
+        }
+
+        if (state.algorithm === 'binary') {
+          if (idx === low) pointerBadges.push('<span class="bg-blue-600 text-white text-[9px] px-1 rounded-sm font-mono">L</span>');
+          if (idx === mid) pointerBadges.push('<span class="bg-purple-600 text-white text-[9px] px-1 rounded-sm font-mono">M</span>');
+          if (idx === high) pointerBadges.push('<span class="bg-rose-600 text-white text-[9px] px-1 rounded-sm font-mono">H</span>');
+        } else if (state.algorithm === 'linear' && idx === inspecting) {
+          pointerBadges.push('<span class="bg-amber-600 text-white text-[9px] px-1 rounded-sm font-mono">PTR</span>');
+        }
+
+        return `
+          <div class="flex flex-col items-center gap-1.5 node-item">
+            <div class="h-4 flex items-center gap-0.5">
+              ${pointerBadges.join('')}
+            </div>
+            <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl border flex items-center justify-center font-mono font-bold text-sm sm:text-base transition-all ${colorClass}">
+              ${val}
+            </div>
+            <span class="text-[10px] font-mono text-slate-600">${idx}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderStack(step) {
+      const container = document.getElementById('canvas-container');
+      const { list, action, index } = step;
+
+      container.className = "w-full h-full flex flex-col justify-end items-center px-4 pb-2 min-h-[320px]";
+      
+      const elements = list.map((val, idx) => {
+        let colorClass = "bg-slate-100 text-slate-800 border-slate-300";
+        let isTop = idx === list.length - 1;
+
+        if (action === 'inspect' && idx === index) {
+          colorClass = "bg-amber-400 text-amber-950 border-amber-500";
+        } else if (action === 'pushed' && idx === index) {
+          colorClass = "bg-emerald-500 text-white border-emerald-600";
+        }
+
+        return `
+          <div class="w-48 sm:w-56 h-10 rounded-lg border flex items-center justify-between px-3 font-mono text-sm font-semibold mb-1.5 node-item ${colorClass}">
+            <span>[${idx}]</span>
+            <span class="text-base">${val}</span>
+            <span class="text-[10px] font-mono uppercase tracking-wider text-slate-600">${isTop ? 'TOP' : ''}</span>
+          </div>
+        `;
+      }).reverse().join('');
+
+      container.innerHTML = `
+        <div class="flex flex-col items-center">
+          <div class="text-[11px] font-mono text-slate-600 mb-2">▼ TOP (LIFO Insert / Delete)</div>
+          <div class="border-b-4 border-x-4 border-slate-300 rounded-b-xl p-2 min-h-[220px] w-56 sm:w-64 flex flex-col justify-end bg-slate-50/50">
+            ${elements || '<div class="text-center py-12 text-slate-600 text-xs font-mono">Stack is Empty</div>'}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderQueue(step) {
+      const container = document.getElementById('canvas-container');
+      const { list, action, index } = step;
+
+      container.className = "w-full h-full flex flex-col justify-center items-center px-4 min-h-[320px]";
+
+      const elements = list.map((val, idx) => {
+        let colorClass = "bg-white text-slate-800 border-slate-300";
+        if (action === 'enqueued' && idx === index) {
+          colorClass = "bg-emerald-500 text-white border-emerald-600";
+        } else if (action === 'inspect' && idx === index) {
+          colorClass = "bg-amber-400 text-amber-950 border-amber-500";
+        }
+
+        return `
+          <div class="flex flex-col items-center gap-1 node-item">
+            <span class="text-[10px] font-mono text-slate-600">${idx === 0 ? 'FRONT' : (idx === list.length - 1 ? 'REAR' : '')}</span>
+            <div class="w-12 h-12 rounded-xl border flex items-center justify-center font-mono font-bold text-sm shadow-xs ${colorClass}">
+              ${val}
+            </div>
+            <span class="text-[9px] font-mono text-slate-600">[${idx}]</span>
+          </div>
+        `;
+      }).join('');
+
+      container.innerHTML = `
+        <div class="w-full flex flex-col items-center">
+          <div class="flex items-center gap-3 w-full max-w-xl justify-between px-2 text-xs font-mono text-slate-600 mb-2">
+            <span>← Dequeue (Out)</span>
+            <span>Enqueue (In) ←</span>
+          </div>
+          <div class="w-full max-w-xl border-y-2 border-dashed border-slate-300 py-4 px-4 flex items-center gap-3 overflow-x-auto min-h-[96px] bg-slate-50/40 rounded-xl">
+            ${elements || '<div class="w-full text-center text-slate-600 text-xs font-mono">Queue is Empty</div>'}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderBST(step) {
+      const container = document.getElementById('canvas-container');
+      const { bst, activeNode, visited = [] } = step;
+
+      container.className = "w-full h-full flex flex-col justify-center items-center relative min-h-[320px]";
+
+      // Build coordinates of nodes in a 800x320 SVG space
+      const nodes = [];
+      const edges = [];
+
+      function layout(node, x, y, dx) {
+        if (!node) return;
+        nodes.push({ val: node.val, x, y });
+        if (node.left) {
+          edges.push({ x1: x, y1: y, x2: x - dx, y2: y + 55 });
+          layout(node.left, x - dx, y + 55, dx * 0.52);
+        }
+        if (node.right) {
+          edges.push({ x1: x, y1: y, x2: x + dx, y2: y + 55 });
+          layout(node.right, x + dx, y + 55, dx * 0.52);
+        }
+      }
+
+      layout(bst, 400, 40, 160);
+
+      const svgLines = edges.map(e => `
+        <line x1="${e.x1}" y1="${e.y1}" x2="${e.x2}" y2="${e.y2}" stroke="#cbd5e1" stroke-width="2" />
+      `).join('');
+
+      const svgNodes = nodes.map(n => {
+        let fill = "#ffffff";
+        let stroke = "#94a3b8";
+        let textColor = "#1e293b";
+
+        if (n.val === activeNode) {
+          fill = "#fbbf24";
+          stroke = "#f59e0b";
+          textColor = "#451a03";
+        } else if (visited.includes(n.val)) {
+          fill = "#10b981";
+          stroke = "#059669";
+          textColor = "#ffffff";
+        }
+
+        return `
+          <g class="node-item">
+            <circle cx="${n.x}" cy="${n.y}" r="18" fill="${fill}" stroke="${stroke}" stroke-width="2.5" />
+            <text x="${n.x}" y="${n.y + 4}" text-anchor="middle" font-family="JetBrains Mono" font-size="12" font-weight="600" fill="${textColor}">${n.val}</text>
+          </g>
+        `;
+      }).join('');
+
+      container.innerHTML = `
+        <svg viewBox="0 0 800 300" class="w-full h-full max-h-[320px]">
+          ${svgLines}
+          ${svgNodes}
+        </svg>
+      `;
+    }
+
+    // --- Master Render Router ---
+    function render(step) {
+      if (!step) return;
+      state.lastStepValue = step;
+
+      if (step.msg) {
+        document.getElementById('status-message').textContent = step.msg;
+      }
+      document.getElementById('step-counter').textContent = `Step: ${state.stepCount}`;
+
+      if (state.category === 'sorting') {
+        renderSorting(step);
+      } else if (state.category === 'searching') {
+        renderSearching(step);
+      } else if (state.algorithm === 'stack') {
+        renderStack(step);
+      } else if (state.algorithm === 'queue') {
+        renderQueue(step);
+      } else if (state.algorithm === 'bst') {
+        renderBST(step);
+      }
+    }
+
+    // --- Playback & Animation Loop ---
+
+    function initGenerator() {
+      state.stepCount = 0;
+      switch (state.algorithm) {
+        case 'bubble':
+          state.generator = bubbleSortGen(state.array);
+          break;
+        case 'quick':
+          state.generator = quickSortGen(state.array);
+          break;
+        case 'linear':
+          state.generator = linearSearchGen(state.array, state.target);
+          break;
+        case 'binary':
+          state.generator = binarySearchGen(state.array, state.target);
+          break;
+        case 'stack':
+          state.generator = stackDemoGen();
+          break;
+        case 'queue':
+          state.generator = queueDemoGen();
+          break;
+        case 'bst':
+          state.generator = bstInorderGen(state.bstRoot);
+          break;
+      }
+    }
+
+    function stepForward() {
+      if (!state.generator) {
+        initGenerator();
+      }
+      const { value, done } = state.generator.next();
+      if (done) {
+        pause();
+        return false;
+      }
+      state.stepCount++;
+      render(value);
+      return true;
+    }
+
+    function togglePlay() {
+      if (state.isPlaying) {
+        pause();
+      } else {
+        play();
+      }
+    }
+
+    function play() {
+      if (!state.generator) {
+        initGenerator();
+      }
+      state.isPlaying = true;
+      updatePlayButtonUI();
+
+      function loop() {
+        if (!state.isPlaying) return;
+        const hasMore = stepForward();
+        if (hasMore) {
+          state.timerId = setTimeout(loop, state.delay);
+        } else {
+          pause();
+        }
+      }
+      state.timerId = setTimeout(loop, state.delay);
+    }
+
+    function pause() {
+      state.isPlaying = false;
+      if (state.timerId) {
+        clearTimeout(state.timerId);
+        state.timerId = null;
+      }
+      updatePlayButtonUI();
+    }
+
+    function resetState() {
+      pause();
+      state.generator = null;
+      state.stepCount = 0;
+      document.getElementById('step-counter').textContent = `Step: 0`;
+
+      if (state.category === 'sorting') {
+        renderSorting({ arr: state.array, msg: 'Array reset. Ready to run.' });
+      } else if (state.category === 'searching') {
+        const arr = state.algorithm === 'binary' ? [...state.array].sort((a,b)=>a-b) : state.array;
+        renderSearching({ arr, msg: `Ready to search for target: ${state.target}.` });
+      } else if (state.algorithm === 'stack') {
+        renderStack({ list: state.dsList, msg: 'Stack reset. Use Demo or Push/Pop.' });
+      } else if (state.algorithm === 'queue') {
+        renderQueue({ list: state.dsList, msg: 'Queue reset. Use Demo or Enqueue/Dequeue.' });
+      } else if (state.algorithm === 'bst') {
+        buildDefaultBST();
+        renderBST({ bst: state.bstRoot, activeNode: null, visited: [], msg: 'BST ready. Inorder traversal will visit nodes in ascending order.' });
+      }
+    }
+
+    function updateSpeed(val) {
+      // Invert slider so right = faster
+      const min = 50, max = 1000;
+      state.delay = (max - val) + min;
+    }
+
+    function updatePlayButtonUI() {
+      const btn = document.getElementById('btn-play');
+      const text = document.getElementById('play-text');
+      const icon = document.getElementById('play-icon');
+
+      if (state.isPlaying) {
+        text.textContent = "Pause";
+        icon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
+        btn.classList.remove('bg-slate-900', 'hover:bg-slate-800');
+        btn.classList.add('bg-amber-600', 'hover:bg-amber-500');
+      } else {
+        text.textContent = "Play";
+        icon.innerHTML = '<path d="M8 5v14l11-7z"/>';
+        btn.classList.add('bg-slate-900', 'hover:bg-slate-800');
+        btn.classList.remove('bg-amber-600', 'hover:bg-amber-500');
+      }
+    }
+
+    // --- BST Helper Setup ---
+    function bstInsert(root, val) {
+      if (!root) return new BSTNode(val);
+      if (val < root.val) root.left = bstInsert(root.left, val);
+      else if (val > root.val) root.right = bstInsert(root.right, val);
+      return root;
+    }
+
+    function buildDefaultBST() {
+      state.bstRoot = null;
+      [45, 25, 65, 15, 35, 55, 75].forEach(v => {
+        state.bstRoot = bstInsert(state.bstRoot, v);
+      });
+    }
+
+    // --- UI Context & Navigation Routing ---
+
+    function setCategory(cat) {
+      state.category = cat;
+      ['sorting', 'searching', 'datastructures'].forEach(c => {
+        const btn = document.getElementById(`cat-${c}`);
+        if (c === cat) {
+          btn.className = "px-3.5 py-1.5 rounded-lg transition-all text-slate-900 bg-white shadow-xs font-semibold";
+        } else {
+          btn.className = "px-3.5 py-1.5 rounded-lg transition-all text-slate-700 hover:text-slate-900";
+        }
+      });
+
+      const select = document.getElementById('algo-select');
+      select.innerHTML = '';
+
+      if (cat === 'sorting') {
+        select.innerHTML = `
+          <option value="bubble">Bubble Sort</option>
+          <option value="quick">Quick Sort</option>
+        `;
+        state.algorithm = 'bubble';
+      } else if (cat === 'searching') {
+        select.innerHTML = `
+          <option value="linear">Linear Search</option>
+          <option value="binary">Binary Search</option>
+        `;
+        state.algorithm = 'linear';
+      } else {
+        select.innerHTML = `
+          <option value="stack">Stack (LIFO)</option>
+          <option value="queue">Queue (FIFO)</option>
+          <option value="bst">Binary Search Tree (Inorder)</option>
+        `;
+        state.algorithm = 'stack';
+      }
+
+      onAlgoChange();
+    }
+
+    function onAlgoChange() {
+      state.algorithm = document.getElementById('algo-select').value;
+      document.getElementById('complexity-badge').textContent = algoMeta[state.algorithm].complexity;
+      buildInputToolbar();
+      resetState();
+    }
+
+    function buildInputToolbar() {
+      const container = document.getElementById('dynamic-inputs');
+      container.innerHTML = '';
+
+      if (state.category === 'sorting') {
+        container.innerHTML = `
+          <div class="flex items-center gap-1.5 w-full">
+            <input type="text" id="array-input" value="${state.array.join(', ')}" 
+                   placeholder="e.g. 12, 45, 23, 8" 
+                   class="w-full text-xs sm:text-sm font-mono border border-slate-200 rounded-lg px-2.5 py-1.5 focus:border-slate-400 focus:outline-hidden" />
+            <button onclick="applyCustomArray()" class="h-8 px-2.5 text-xs font-medium border border-slate-200 hover:bg-slate-50 rounded-lg whitespace-nowrap">
+              Apply
+            </button>
+            <button onclick="randomizeArray()" class="h-8 px-2.5 text-xs font-medium border border-slate-200 hover:bg-slate-50 rounded-lg whitespace-nowrap">
+              Random
+            </button>
+          </div>
+        `;
+      } else if (state.category === 'searching') {
+        container.innerHTML = `
+          <div class="flex items-center gap-2 w-full">
+            <input type="text" id="array-input" value="${state.array.join(', ')}" 
+                   placeholder="Array values" 
+                   class="w-full text-xs sm:text-sm font-mono border border-slate-200 rounded-lg px-2.5 py-1.5 focus:border-slate-400 focus:outline-hidden" />
+            <div class="flex items-center gap-1">
+              <span class="text-xs text-slate-600 font-medium">Target</span>
+              <input type="number" id="target-input" value="${state.target}" 
+                     class="w-14 text-xs sm:text-sm font-mono border border-slate-200 rounded-lg px-2 py-1.5 focus:border-slate-400 focus:outline-hidden" />
+            </div>
+            <button onclick="applySearchInputs()" class="h-8 px-2.5 text-xs font-medium border border-slate-200 hover:bg-slate-50 rounded-lg">
+              Set
+            </button>
+          </div>
+        `;
+      } else if (state.algorithm === 'stack') {
+        container.innerHTML = `
+          <div class="flex items-center gap-1.5">
+            <input type="number" id="ds-val" placeholder="Val" value="50" class="w-14 text-xs font-mono border border-slate-200 rounded-lg px-2 py-1.5" />
+            <button onclick="manualStackPush()" class="h-8 px-2.5 text-xs font-medium border border-slate-200 hover:bg-slate-50 rounded-lg">Push</button>
+            <button onclick="manualStackPop()" class="h-8 px-2.5 text-xs font-medium border border-slate-200 hover:bg-slate-50 rounded-lg">Pop</button>
+          </div>
+        `;
+      } else if (state.algorithm === 'queue') {
+        container.innerHTML = `
+          <div class="flex items-center gap-1.5">
+            <input type="number" id="ds-val" placeholder="Val" value="50" class="w-14 text-xs font-mono border border-slate-200 rounded-lg px-2 py-1.5" />
+            <button onclick="manualQueueEnqueue()" class="h-8 px-2.5 text-xs font-medium border border-slate-200 hover:bg-slate-50 rounded-lg">Enqueue</button>
+            <button onclick="manualQueueDequeue()" class="h-8 px-2.5 text-xs font-medium border border-slate-200 hover:bg-slate-50 rounded-lg">Dequeue</button>
+          </div>
+        `;
+      } else if (state.algorithm === 'bst') {
+        container.innerHTML = `
+          <div class="flex items-center gap-1.5">
+            <input type="number" id="ds-val" placeholder="Val" value="30" class="w-14 text-xs font-mono border border-slate-200 rounded-lg px-2 py-1.5" />
+            <button onclick="manualBSTInsert()" class="h-8 px-2.5 text-xs font-medium border border-slate-200 hover:bg-slate-50 rounded-lg">Insert Node</button>
+            <button onclick="buildDefaultBST(); resetState();" class="h-8 px-2.5 text-xs font-medium border border-slate-200 hover:bg-slate-50 rounded-lg">Sample Tree</button>
+          </div>
+        `;
+      }
+    }
+
+    // --- Custom Input Handlers ---
+
+    function applyCustomArray() {
+      const raw = document.getElementById('array-input').value;
+      const parsed = raw.split(',').map(n => parseInt(n.trim(), 10)).filter(n => !isNaN(n));
+      if (parsed.length > 1) {
+        state.array = parsed.slice(0, 16); // max 16 for clean rendering
+        resetState();
+      }
+    }
+
+    function randomizeArray() {
+      const len = Math.floor(Math.random() * 5) + 8;
+      const arr = [];
+      for (let i = 0; i < len; i++) {
+        arr.push(Math.floor(Math.random() * 88) + 10);
+      }
+      state.array = arr;
+      document.getElementById('array-input').value = arr.join(', ');
+      resetState();
+    }
+
+    function applySearchInputs() {
+      applyCustomArray();
+      const t = parseInt(document.getElementById('target-input').value, 10);
+      if (!isNaN(t)) {
+        state.target = t;
+        resetState();
+      }
+    }
+
+    // Direct Data Structure operations
+    function manualStackPush() {
+      const val = parseInt(document.getElementById('ds-val').value, 10);
+      if (!isNaN(val)) {
+        state.dsList.push(val);
+        renderStack({ list: state.dsList, action: 'pushed', index: state.dsList.length - 1, msg: `Pushed ${val} onto stack.` });
+      }
+    }
+
+    function manualStackPop() {
+      if (state.dsList.length > 0) {
+        const val = state.dsList.pop();
+        renderStack({ list: state.dsList, action: 'popped', msg: `Popped ${val} from stack.` });
+      }
+    }
+
+    function manualQueueEnqueue() {
+      const val = parseInt(document.getElementById('ds-val').value, 10);
+      if (!isNaN(val)) {
+        state.dsList.push(val);
+        renderQueue({ list: state.dsList, action: 'enqueued', index: state.dsList.length - 1, msg: `Enqueued ${val} at rear.` });
+      }
+    }
+
+    function manualQueueDequeue() {
+      if (state.dsList.length > 0) {
+        const val = state.dsList.shift();
+        renderQueue({ list: state.dsList, action: 'dequeued', msg: `Dequeued ${val} from front.` });
+      }
+    }
+
+    function manualBSTInsert() {
+      const val = parseInt(document.getElementById('ds-val').value, 10);
+      if (!isNaN(val)) {
+        state.bstRoot = bstInsert(state.bstRoot, val);
+        renderBST({ bst: state.bstRoot, activeNode: val, visited: [], msg: `Inserted ${val} into BST.` });
+      }
+    }
+
+    // --- Keyboard Shortcuts ---
+    window.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT') return;
+      if (e.code === 'Space') {
+        e.preventDefault();
+        togglePlay();
+      } else if (e.code === 'ArrowRight') {
+        e.preventDefault();
+        stepForward();
+      } else if (e.code === 'KeyR') {
+        resetState();
+      }
+    });
+
+    // --- Initial Boot ---
+    window.addEventListener('DOMContentLoaded', () => {
+      buildDefaultBST();
+      setCategory('sorting');
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+{
+  "name": "DSA Studio — Interactive Algorithm Visualizer",
+  "description": "An interactive, modular visual engine for Data Structures and Algorithms including sorting, searching, linked lists, trees, graphs, hash tables, and backtracking (Sudoku, N-Queens, Tower of Hanoi).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
